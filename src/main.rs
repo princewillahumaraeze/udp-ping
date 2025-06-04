@@ -108,9 +108,7 @@ fn create_socket(local_ip_str: &str) -> io::Result<UdpSocket>{
     }
 }
 
-fn build_socket_payload(sequence_payload: u32,
-custom_payload_str:&str
-)->Vec<u8>{
+fn build_socket_payload(sequence_payload: u32,custom_payload_str:&str)->Vec<u8>{
     unimplemented!()
 }
 
