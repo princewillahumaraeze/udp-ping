@@ -1,3 +1,4 @@
+use std::arch::x86_64::_SIDD_CMP_EQUAL_ANY;
 use std::net::{UdpSocket, SocketAddr};
 use std::time::{Duration, Instant};
 use std::env;
@@ -49,5 +50,24 @@ fn main() -> io::Result<()>{
             return Err(e);
         }
     };
+
+    println!("UDP Ping Utility");
+    println!("Target: {}, Payload: \"{}\", Source Ip: {}",
+     config.target_addr, config.payload, config.source_ip);
+
+    // Socket creation
+    let socket = match create_socket(&config.source_ip) {
+        Ok(s) => s,
+        Err(e) => {
+            eprintln!("Error: Could not create or bind sockets: {} ", e);
+            return Err(e);
+        }
+    };
+    println!("Bound to local address: {}", socket.local_addr()?);
+
+    // Packet Operations
+    let sequence_number: u32 = 1;
+    perform_echo_ping(&socket,
+         config.target_addr, sequence_number, &config.payload);
 
 }
