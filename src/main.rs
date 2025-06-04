@@ -108,15 +108,17 @@ fn create_socket(local_ip_str: &str) -> io::Result<UdpSocket>{
     }
 }
 
-fn build_socket_payload(sequence_payload: u32,custom_payload_str:&str)->Vec<u8>{
-    unimplemented!()
+fn build_packet_payload(sequence_number: u32,custom_payload_str: &str)->Vec<u8>{
+    let mut send_buf = Vec::new();
+    send_buf.extend_from_slice(PAYLOAD_PREFIX);
+    send_buf.extend_from_slice(&sequence_number.to_be_bytes());
+    send_buf.extend_from_slice(custom_payload_str.as_bytes());
+
+    send_buf
 }
 
-fn perform_echo_ping(socket: &UdpSocket,
-    target_addr:SocketAddr,
-    sequence_number:u32,
-    payload_str:&str
-) -> io::Result<()>{
+fn perform_echo_ping(socket: &UdpSocket, target_addr: SocketAddr,
+    sequence_number: u32, payload_str: &str) -> io::Result<()>{
     unimplemented!()
 }
 
