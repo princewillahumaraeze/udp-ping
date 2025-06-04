@@ -1,7 +1,6 @@
-use std::arch::x86_64::_SIDD_CMP_EQUAL_ANY;
 use std::net::{UdpSocket, SocketAddr};
 use std::time::{Duration, Instant};
-use std::env;
+use std::env::{self, args};
 use std::io::{self, ErrorKind};
 
 //Payload prefix to identify our packet
@@ -31,7 +30,68 @@ fn print_usage(program_name: &str){
 }
 
 fn parse_arguments(args: Vec<String>) -> Result<PacketConfig, io::Error>{
-    unimplemented!()
+    if args.len() < 2 {
+        // i.e Program Name + target_ip:port is minimum
+        return Err(io::Error::new(ErrorKind::InvalidInput, 
+            "Too few arguments"));
+    }
+
+    let mut target_addr_str: Option<String> = None;
+    let mut payload_str= DEFAULT_PAYLOAD.to_string();
+    let mut source_ip_str  = "0.0.0.0".to_string();
+
+    let mut iter = args.iter().skip(1);
+
+    // Check if the first argument is an IP address
+    if let Some(target_arg) = iter.next(){
+        if target_arg.starts_with("--"){
+            return Err(io::Error::new(ErrorKind::InvalidInput,
+                 "target address must be the first argument"));
+        }
+        target_addr_str = Some(target_arg.clone());
+    } else {
+        return Err(io::Error::new(ErrorKind::InvalidInput,
+                 "Missing target address"));
+    }
+
+    // Process remaining optional arguments
+    while let Some(arg) = iter.next() {
+        if arg == "--source" {
+            if let Some(ip_val) = iter.next(){
+                // Perform validation to be sure it an ip address
+                if ip_val.parse::<std::net::IpAddr>().is_err(){
+                    return Err(io::Error::new(ErrorKind::InvalidInput,
+                        format!("Invalid format format for --source: {}",
+                         ip_val)
+                        )
+                    );
+                }
+                source_ip_str = ip_val.clone();
+            } else {
+                return Err(io::Error::new(ErrorKind::InvalidInput,
+                 "Missing value for the '--source' argument"));
+            }
+        } else if !arg.starts_with("--") {
+            payload_str = arg.clone()
+        } else {
+            return Err(io::Error::new(ErrorKind::InvalidInput,
+                format!("Unknown option or argument: {}",arg)));
+        }
+    }
+
+    let target_addr: SocketAddr = match target_addr_str.unwrap().parse() {
+        Ok(addr) => addr,
+        Err(_) => {
+            return Err(io::Error::new(ErrorKind::InvalidInput, 
+                "Invlid target address format. Use IP:Port"));
+        }
+    };
+
+    Ok(PacketConfig{
+        target_addr,
+        payload: payload_str,
+        source_ip: source_ip_str
+    })
 }
 
 fn create_socket(local_ip_str: &str) -> io::Result<UdpSocket>{
