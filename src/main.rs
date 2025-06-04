@@ -95,11 +95,21 @@ fn parse_arguments(args: Vec<String>) -> Result<PacketConfig, io::Error>{
 }
 
 fn create_socket(local_ip_str: &str) -> io::Result<UdpSocket>{
-    unimplemented!()
+    // Bind to the specified local_ip and let the os pick the available port
+    let bind_addr_str = format!("{}:0", local_ip_str);
+
+    match UdpSocket::bind(&bind_addr_str){
+        Ok(s) => Ok(s),
+        Err(e) => {
+            eprintln!("Error: Could not bind to local address: {}: {}",
+             bind_addr_str, e);
+            Err(e)
+        }
+    }
 }
 
 fn build_socket_payload(sequence_payload: u32,
-     custom_payload_str:&str
+custom_payload_str:&str
 )->Vec<u8>{
     unimplemented!()
 }
