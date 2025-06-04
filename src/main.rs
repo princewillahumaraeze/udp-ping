@@ -16,7 +16,18 @@ struct PacketConfig{
 }
 
 fn print_usage(program_name: &str){
-    unimplemented!()
+    eprintln!("Usage: {} <target_ip:port> [optional_payload] 
+                [--source <local_ip_address>]", program_name);
+    eprintln!("Example: {} 8.8.8.8:53 \"Test Echo\" --source 192.168.1.100",
+                program_name);
+    eprintln!("Example: {} 127.0.0.1:7878", program_name);
+    eprintln!("Notes:");
+    eprintln!(" - The target must be running a UDP echo service
+                or a service that might echo unexpected UDP packets.");
+    eprintln!(" - If --source is not provided,
+                it defaults to 0.0.0.0 (all interfaces).");
+    eprintln!(" - The local port for the source is always chosen by the OS
+                (e.g., <local_ip_address>:0).");
 }
 
 fn parse_arguments(args: Vec<String>) -> Result<PacketConfig, io::Error>{
