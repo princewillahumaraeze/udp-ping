@@ -1,6 +1,6 @@
 use std::net::{UdpSocket, SocketAddr};
 use std::time::{Duration, Instant};
-use std::env::{self, args};
+use std::env;
 use std::io::{self, ErrorKind};
 
 //Payload prefix to identify our packet
@@ -119,7 +119,58 @@ fn build_packet_payload(sequence_number: u32,custom_payload_str: &str)->Vec<u8>{
 
 fn perform_echo_ping(socket: &UdpSocket, target_addr: SocketAddr,
     sequence_number: u32, payload_str: &str) -> io::Result<()>{
-    unimplemented!()
+    
+    // Packet construction
+    let send_buf = build_packet_payload(sequence_number, payload_str);
+
+    //Sending the packet
+    let start_time = Instant::now();
+    println!("Sending {} bytes to {}" ,send_buf.len(), target_addr);
+    match socket.send_to(&send_buf, target_addr) {
+        Ok(bytes_sent) => {
+            if bytes_sent != send_buf.len(){
+                eprintln!("Warning: Not al bytes were sent.
+                 Expected {} sent {}",send_buf.len(), bytes_sent )
+            }
+        }
+        Err(e) => {
+            eprintln!("Error: Failed to send packet: {}", e);
+            return Err(e);
+        }
+    }
+
+    //Recieving the response
+    let mut recv_buf  =[0u8; 1024]; //buffer for recieving data
+    let timeout_duration = Duration::from_secs(DEFAULT_TIMEOUT_SECONDS);
+    let _ = socket.set_read_timeout(Some(timeout_duration));
+    println!("Waiting for reply (timeout: {}s)...", DEFAULT_TIMEOUT_SECONDS);
+
+    match socket.recv_from(&mut recv_buf) {
+        Ok((bytes_recieved, source_address)) => {
+            let rtt = start_time.elapsed();
+            println!("Recieved {} from {} in {:.2}ms",
+             bytes_recieved, source_address, rtt.as_secs_f64()*1000.0);
+            
+            // Response Validation
+            if source_address != target_addr{
+                println!("Recieved reply from an unexpected source: {},
+                 Expected Source: {}", source_address, target_addr);
+            }
+            //Further validation required
+        }
+        Err(e) => {
+            if e.kind() == ErrorKind::WouldBlock || e.kind() == ErrorKind::TimedOut{
+                println!("Request timed out after {} seconds ",
+                    DEFAULT_TIMEOUT_SECONDS);
+                return Err(io::Error::new(ErrorKind::TimedOut,
+                        "Request timed out"));
+            }else {
+                eprintln!("Error: Failed to recieve packet: {}", e);
+                return Err(e);
+            }
+        }
+        }
+    Ok(())
 }
 
 fn main() -> io::Result<()>{
@@ -149,6 +200,6 @@ fn main() -> io::Result<()>{
     // Packet Operations
     let sequence_number: u32 = 1;
     perform_echo_ping(&socket,
-         config.target_addr, sequence_number, &config.payload);
+         config.target_addr, sequence_number, &config.payload)
 
 }
